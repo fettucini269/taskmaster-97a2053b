@@ -3,16 +3,34 @@ TaskMaster
 A simple task management application to help users organize their daily tasks.
 """
 import os
+import sys
 import logging
 from flask import Flask, jsonify, request
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging to stdout
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+def get_db_connection():
+    """Get database connection."""
+    database_url = os.environ.get('DATABASE_URL')
+    sslmode = os.environ.get('DB_SSLMODE', 'disable')  # Default to disable SSL
+    if database_url:
+        return psycopg2.connect(database_url, cursor_factory=RealDictCursor, sslmode=sslmode)
+    else:
+        return psycopg2.connect(
+            host=os.environ.get('DB_HOST', 'localhost'),
+            port=os.environ.get('DB_PORT', '5432'),
+            dbname=os.environ.get('DB_NAME', 'app'),
+            user=os.environ.get('DB_USER', 'postgres'),
+            password=os.environ.get('DB_PASSWORD', 'postgres'),
+            cursor_factory=RealDictCursor,
+            sslmode=sslmode
+        )
 
 def get_db_connection():
     """Get database connection."""
@@ -164,4 +182,5 @@ def index():
 
 if __name__ == '__main__':
     init_db()
-    app.run(host='0.0.0.0', port=8080, debug=False)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)
